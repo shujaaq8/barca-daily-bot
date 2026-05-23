@@ -21,16 +21,25 @@ def get_barca_news():
 
 def summarize_news(articles):
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    
     news_text = ""
     for i, a in enumerate(articles, 1):
-        news_text += f"{i}. {a['title']}\n{a['description']}\n\n"
-    
+        news_text += str(i) + ". " + a["title"] + "\n" + str(a["description"]) + "\n\n"
     today = datetime.now().strftime("%A %d %B %Y")
-    
+    prompt = "انت محرر رياضي. اكتب تقريرا يوميا بالعربية عن اخبار برشلونة ليوم " + today + ". الاخبار: " + news_text
     message = client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=2000,
-        messages=[{
-            "role": "user",
-            "content": f"""أ
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return message.content[0].text
+
+def send_telegram(text):
+    url = "https://api.telegram.org/bot" + TELEGRAM_TOKEN + "/sendMessage"
+    data = {"chat_id": CHAT_ID, "text": text}
+    requests.post(url, data=data)
+
+if __name__ == "__main__":
+    articles = get_barca_news()
+    report = summarize_news(articles)
+    send_telegram(report)
+    print("تم!")
